@@ -610,9 +610,10 @@ function buildPantryBlocks(userId) {
 }
 
 async function sendPantryDashboard(client, channelId, userId) {
+  const targetChannel = (channelId && channelId.startsWith('D')) ? userId : channelId;
   try {
     await client.chat.postMessage({
-      channel: channelId,
+      channel: targetChannel,
       text: '❄️ FridgeChef AI Pantry Inventory',
       blocks: buildPantryBlocks(userId)
     });
@@ -638,11 +639,28 @@ async function updatePantryDashboard(client, channelId, ts, userId) {
  * Integrated shopping list executor (formerly /fridgeshop).
  */
 async function handleShopRequest({ client, channelId, userId, ingredients }) {
+  let targetChannel = (channelId && channelId.startsWith('D')) ? userId : channelId;
+  let infoMessage;
+  const statusText = `🛒 Compiling the shopping checklist for <@${userId}>...`;
+
   try {
-    const infoMessage = await client.chat.postMessage({
-      channel: channelId,
-      text: `🛒 Compiling the shopping checklist for <@${userId}>...`
-    });
+    try {
+      infoMessage = await client.chat.postMessage({
+        channel: targetChannel,
+        text: statusText
+      });
+    } catch (err) {
+      if (err.data?.error === 'channel_not_found' || err.data?.error === 'not_in_channel') {
+        console.warn(`Channel ${targetChannel} not found or bot not in it. Falling back to DM for user ${userId}`);
+        targetChannel = userId;
+        infoMessage = await client.chat.postMessage({
+          channel: targetChannel,
+          text: statusText + '\n\n*(Note: Sent to DM because the bot is not in the original channel)*'
+        });
+      } else {
+        throw err;
+      }
+    }
 
     const systemPrompt = `You are FridgeChef AI, a smart kitchen planner. Suggest 1-2 meals and list missing items.
 Format response in Slack Markdown. Use bolding. No # headers.
@@ -691,7 +709,7 @@ Milk, Butter, Tomatoes`;
     }
 
     await client.chat.update({
-      channel: channelId,
+      channel: infoMessage.channel,
       ts: infoMessage.ts,
       text: contentText,
       blocks: responseBlocks

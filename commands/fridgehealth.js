@@ -335,9 +335,10 @@ function buildDashboardBlocks(userId) {
  * Sends a fresh Wellness Dashboard to the channel.
  */
 async function sendWellnessDashboard(client, channelId, userId) {
+  const targetChannel = (channelId && channelId.startsWith('D')) ? userId : channelId;
   try {
     await client.chat.postMessage({
-      channel: channelId,
+      channel: targetChannel,
       text: '🥗 FridgeChef AI Wellness Dashboard',
       blocks: buildDashboardBlocks(userId)
     });
@@ -366,15 +367,30 @@ async function updateWellnessDashboard(client, channelId, ts, userId) {
  * Core health analysis executor. Calls Groq to analyze nutritional value.
  */
 async function handleHealthRequest({ client, channelId, userId, ingredients, isButtonTriggered = false }) {
-  try {
-    const statusText = isButtonTriggered 
-      ? `🥗 Analyzing the nutritional health of the recipe ingredients for <@${userId}>...`
-      : `🥗 *FridgeChef AI* is analyzing the nutritional health of: "${ingredients}" for <@${userId}>...`;
+  let targetChannel = (channelId && channelId.startsWith('D')) ? userId : channelId;
+  let infoMessage;
+  const statusText = isButtonTriggered 
+    ? `🥗 Analyzing the nutritional health of the recipe ingredients for <@${userId}>...`
+    : `🥗 *FridgeChef AI* is analyzing the nutritional health of: "${ingredients}" for <@${userId}>...`;
 
-    const infoMessage = await client.chat.postMessage({
-      channel: channelId,
-      text: statusText
-    });
+  try {
+    try {
+      infoMessage = await client.chat.postMessage({
+        channel: targetChannel,
+        text: statusText
+      });
+    } catch (err) {
+      if (err.data?.error === 'channel_not_found' || err.data?.error === 'not_in_channel') {
+        console.warn(`Channel ${targetChannel} not found or bot not in it. Falling back to DM for user ${userId}`);
+        targetChannel = userId;
+        infoMessage = await client.chat.postMessage({
+          channel: targetChannel,
+          text: statusText + '\n\n*(Note: Sent to DM because the bot is not in the original channel)*'
+        });
+      } else {
+        throw err;
+      }
+    }
 
     const systemPrompt = `You are FridgeChef AI, an expert nutritionist and dietitian.
 Analyze the user's list of ingredients or meal description and provide a healthy lifestyle score and macro estimation.
@@ -394,7 +410,7 @@ Your response MUST contain the following sections:
     const healthResponse = await getGroqCompletion(prompt, systemPrompt);
 
     await client.chat.update({
-      channel: channelId,
+      channel: infoMessage.channel,
       ts: infoMessage.ts,
       text: healthResponse,
       blocks: [
@@ -412,7 +428,7 @@ Your response MUST contain the following sections:
     console.error('Error in health analysis:', error);
     try {
       await client.chat.postMessage({
-        channel: channelId,
+        channel: targetChannel,
         text: `⚠️ *FridgeChef AI Error:* Failed to complete the health analysis. (Error: ${error.message})`
       });
     } catch (err) {

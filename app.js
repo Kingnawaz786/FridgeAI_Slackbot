@@ -46,6 +46,7 @@ const httpServer = expressApp.listen(port, () => {
 require('./commands/fridgecook')(app);
 require('./commands/fridgehealth')(app);
 require('./commands/fridgeinventory')(app);
+require('./commands/fridgehelp')(app);
 
 // 4. Register Event Listeners (e.g. app_mention)
 // Handles direct mentions: @FridgeChef AI chicken, eggs, rice

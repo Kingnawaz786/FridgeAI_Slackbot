@@ -240,14 +240,28 @@ module.exports = (app) => {
  * and formats the result with Block Kit action buttons.
  */
 async function handleRecipeRequest({ client, channelId, userId, ingredients, diet, mealType = 'standard', optimizeLeftovers = false }) {
+  let targetChannel = (channelId && channelId.startsWith('D')) ? userId : channelId;
+  let infoMessage;
+  const statusText = `🍳 *FridgeChef AI* is compiling a *${mealType}* recipe for <@${userId}> using: "${ingredients}"...`;
+
   try {
-    // Notify channel that cooking is in progress
-    const statusText = `🍳 *FridgeChef AI* is compiling a *${mealType}* recipe for <@${userId}> using: "${ingredients}"...`;
-    
-    const infoMessage = await client.chat.postMessage({
-      channel: channelId,
-      text: statusText
-    });
+    try {
+      infoMessage = await client.chat.postMessage({
+        channel: targetChannel,
+        text: statusText
+      });
+    } catch (err) {
+      if (err.data?.error === 'channel_not_found' || err.data?.error === 'not_in_channel') {
+        console.warn(`Channel ${targetChannel} not found or bot not in it. Falling back to DM for user ${userId}`);
+        targetChannel = userId; // Redirect all subsequent posts/updates to DM
+        infoMessage = await client.chat.postMessage({
+          channel: targetChannel,
+          text: statusText + '\n\n*(Note: Sent to DM because the bot is not in the original channel)*'
+        });
+      } else {
+        throw err;
+      }
+    }
 
     const systemPrompt = `You are FridgeChef AI, a professional chef.
 Suggest a recipe matching the user's specific recipe style, dietary restrictions, and ingredients.
@@ -280,7 +294,7 @@ Your response MUST contain the following sections:
 
     // Update the message with Block Kit including action buttons
     await client.chat.update({
-      channel: channelId,
+      channel: infoMessage.channel,
       ts: infoMessage.ts,
       text: recipeResponse,
       blocks: [
@@ -321,7 +335,7 @@ Your response MUST contain the following sections:
     console.error('Error generating recipe:', error);
     try {
       await client.chat.postMessage({
-        channel: channelId,
+        channel: targetChannel,
         text: `⚠️ *FridgeChef AI Error:* Failed to generate a recipe. (Error: ${error.message})`
       });
     } catch (err) {
