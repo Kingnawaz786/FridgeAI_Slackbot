@@ -10,10 +10,24 @@ module.exports = (app) => {
   app.command('/fridgecook', async ({ command, ack, body, client }) => {
     await ack();
 
-    const ingredients = command.text.trim();
-
-    // IF no ingredients are provided, open an Interactive Block Kit Modal
+    // IF no ingredients are provided, check if they have saved items in their inventory
     if (!ingredients) {
+      const { getUserInventory } = require('./fridgeinventory');
+      const savedItems = getUserInventory(command.user_id);
+
+      // If they have saved items, cook using the inventory immediately!
+      if (savedItems && savedItems.length > 0) {
+        await handleRecipeRequest({
+          client,
+          channelId: command.channel_id,
+          userId: command.user_id,
+          ingredients: savedItems.join(', '),
+          diet: null
+        });
+        return;
+      }
+
+      // Otherwise, fall back to opening the Interactive Block Kit Modal
       try {
         await client.views.open({
           trigger_id: body.trigger_id,

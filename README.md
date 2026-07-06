@@ -1,31 +1,38 @@
 # FridgeChef AI 🍳🥗🛒
 
-FridgeChef AI is a Node.js-based Slack Bot that helps users figure out what to cook with whatever ingredients they have left in their fridge. Powered by the high-performance **Groq API (Llama 3.3)** and built using the **Slack Bolt SDK**, this application serves as an excellent submission for college projects or showcase portfolios.
+FridgeChef AI is an interactive, Node.js-based Slack Bot that helps users figure out what to cook with whatever ingredients they have left in their fridge. Powered by the high-performance **Groq API (Llama 3.3)** and built using the **Slack Bolt SDK in Socket Mode**, this application serves as an excellent submission for college projects or showcase portfolios.
+
+With **Socket Mode** enabled, the bot establishes a secure WebSocket connection directly to Slack. This removes the need for public HTTP tunnels (like ngrok or tunnelmole) during local development!
 
 ---
 
 ## 🚀 Features
 
-The bot exposes three primary slash commands in Slack:
+### 1. Slash Commands
+- **`/fridgecook [ingredients]`**  
+  Suggests a creative recipe including recipe name, ingredients used, step-by-step cooking instructions, prep/cook time, and estimated calories. Running this command without arguments opens an **interactive Slack modal form** where you can select common items via checkboxes, write custom ingredients, and apply dietary filters.
+  
+- **`/fridgehealth [ingredients/meal]`**  
+  Provides a health score (out of 10), estimated macronutrient content (protein, carbs, fats), and constructive suggestions to make the meal healthier.
+  
+- **`/fridgeshop [ingredients]`**  
+  Identifies missing ingredients to complete standard meals, suggests clever substitutions, and estimates the shopping cost. It renders an **interactive checkbox shopping list** where you can mark items as purchased directly in Slack.
 
-1. **`/fridgecook [ingredients]`**  
-   Suggests a creative recipe including recipe name, ingredients used, step-by-step cooking instructions, prep/cook time, and estimated calories.
-   
-2. **`/fridgehealth [ingredients/meal]`**  
-   Provides a health score (out of 10), estimated macronutrient content (protein, carbs, fats), and constructive suggestions to make the meal healthier.
-   
-3. **`/fridgeshop [ingredients]`**  
-   Identifies missing ingredients to complete standard meals, suggests clever substitutions for ingredients you already have, and estimates the shopping cost.
+### 2. App Mentions & Channel History
+- **Direct Mentions (`@FridgeAI`):**  
+  Mentions in public channels trigger a recipe suggestion thread. For example: `@FridgeChef AI eggs, toast, cheddar`.
+- **Block Kit Chaining:**  
+  All recipe outputs (commands and mentions) come with **"Analyze Health"** and **"Get Shopping List"** buttons to run follow-up actions dynamically.
 
 ---
 
 ## 🛠️ Tech Stack
 
 - **Backend Runtime:** Node.js
-- **Server Framework:** Express (via Slack Bolt's built-in `ExpressReceiver`)
-- **Slack SDK:** `@slack/bolt`
+- **Slack SDK:** `@slack/bolt` (Socket Mode)
 - **AI Inference Engine:** Groq Cloud SDK (`groq-sdk` with `llama-3.3-70b-versatile` model)
 - **Environment Management:** `dotenv`
+- **Health check Server:** Express (runs on port 3000 to keep cloud instances warm)
 
 ---
 
@@ -35,148 +42,140 @@ The bot exposes three primary slash commands in Slack:
 fridgechef-slack/
 │
 ├── commands/
-│   ├── fridgecook.js      # Handler for /fridgecook command
-│   ├── fridgehealth.js    # Handler for /fridgehealth command
-│   └── fridgeshop.js      # Handler for /fridgeshop command
+│   ├── fridgecook.js      # Handler for /fridgecook command & Modal
+│   ├── fridgehealth.js    # Handler for /fridgehealth command & health buttons
+│   └── fridgeshop.js      # Handler for /fridgeshop command & interactive checklists
 │
 ├── services/
 │   └── groq.js            # Reusable Groq API wrapper service
 │
 ├── .env                   # Local secrets (ignored in Git)
 ├── .env.example           # Example configuration template
-├── app.js                 # Application entrypoint & Bolt server
+├── app.js                 # Socket Mode app & Express health check
 ├── package.json           # Dependency management and scripts
+├── DEVLOG.md              # Project version devlog
 └── README.md              # Project documentation (This file)
 ```
 
 ---
 
-## ⚙️ Prerequisites & Installation
+## ⚙️ Local Installation
 
-### 1. Install Node.js
-Ensure you have Node.js (version 18 or above) installed on your system. You can check your version by running:
+### 1. Check Node.js
+Ensure you have Node.js (version 18 or above) installed.
 ```bash
 node -v
 ```
 
-### 2. Clone and Install Dependencies
-Navigate into your project folder and run the installation command:
+### 2. Install Dependencies
+Run the installation command in the project folder:
 ```bash
 npm install
 ```
 
 ---
 
-## 🤖 Slack App Setup Guide
+## 🤖 Slack App Setup Guide (Socket Mode & Events)
 
-To connect the bot to Slack, you need to create a Slack App:
+To connect the bot to Slack using Socket Mode:
 
-1. **Create an App:**
-   - Go to [Slack API: Your Apps](https://api.slack.com/apps).
-   - Click **Create New App** -> Select **From scratch**.
-   - Name your app `FridgeChef AI` and select your development Slack Workspace.
+### Step 1: Create an App
+1. Go to [Slack API: Your Apps](https://api.slack.com/apps).
+2. Click **Create New App** -> Select **From scratch**.
+3. Name your app `FridgeChef AI` and select your development Slack Workspace.
 
-2. **Configure Slash Commands:**
-   - In the left sidebar under *Features*, click **Slash Commands**.
-   - Create the following three commands:
-     - **Command:** `/fridgecook`
-       - **Request URL:** `https://<YOUR_TEMPORARY_DOMAIN>/slack/events`
-       - **Short Description:** Suggests recipes based on available ingredients.
-     - **Command:** `/fridgehealth`
-       - **Request URL:** `https://<YOUR_TEMPORARY_DOMAIN>/slack/events`
-       - **Short Description:** Analyzes the nutritional health of ingredients.
-     - **Command:** `/fridgeshop`
-       - **Request URL:** `https://<YOUR_TEMPORARY_DOMAIN>/slack/events`
-       - **Short Description:** Suggests missing ingredients, substitutes, and costs.
-   - Click **Save**.
+### Step 2: Enable Socket Mode & App-Level Token
+1. Go to **Settings -> Basic Information** in the left sidebar.
+2. Scroll down to **App-Level Tokens** and click **Generate Token**.
+3. Name the token `SocketModeToken`, add the `connections:write` scope, and click **Generate**.
+4. **Copy the App-Level Token** (starts with `xapp-`). You will put this in your `.env` file as `SLACK_APP_LEVEL_TOKEN`.
+5. Go to **Settings -> Socket Mode** in the left sidebar and toggle **Enable Socket Mode** to **On**.
 
-3. **Install App & Get Credentials:**
-   - Go to **Basic Information** under *Settings*:
-     - Scroll down to **App Credentials** and copy the **Signing Secret**.
-   - Go to **OAuth & Permissions** under *Features*:
-     - Scroll down to *Scopes* -> **Bot Token Scopes** and add:
-       - `commands` (Required to respond to slash commands)
-       - `chat:write` (Allows the bot to send messages)
-     - Scroll back up and click **Install to Workspace**.
-     - Copy the **Bot User OAuth Token** (starts with `xoxb-`).
+### Step 3: Configure Slash Commands
+1. In the left sidebar under *Features*, click **Slash Commands** and click **Create New Command**:
+   - **Command:** `/fridgecook` (Short Description: *Suggests recipes based on available ingredients.*)
+   - **Command:** `/fridgehealth` (Short Description: *Analyzes the nutritional health of ingredients.*)
+   - **Command:** `/fridgeshop` (Short Description: *Suggests missing ingredients, substitutes, and costs.*)
+2. *Note: With Socket Mode enabled, you do NOT need to fill in a Request URL. Slack will route these commands through the socket automatically!*
+
+### Step 4: Configure OAuth Scopes & Event Subscriptions
+1. Go to **Features -> OAuth & Permissions**:
+   - Scroll down to *Scopes* -> **Bot Token Scopes** and add:
+     - `commands` (Required for slash commands)
+     - `chat:write` (Allows the bot to send messages)
+     - `app_mentions:read` (Required to view messages that mention the bot)
+     - `channels:history` (Required to view message logs in channels the bot is added to)
+2. Go to **Features -> Event Subscriptions**:
+   - Toggle **Enable Events** to **On**.
+   - Under **Subscribe to bot events**, click **Add Bot User Event** and select `app_mention`.
+   - Click **Save Changes**.
+
+### Step 5: Install App to Workspace
+1. Go back to **OAuth & Permissions**.
+2. Click **Install to Workspace** and authorize it.
+3. Copy the **Bot User OAuth Token** (starts with `xoxb-`). You will put this in your `.env` file as `SLACK_BOT_TOKEN`.
+4. Copy the **Signing Secret** from **Settings -> Basic Information** and save it in your `.env` file as `SLACK_SIGNING_SECRET`.
 
 ---
 
-## 🔑 Groq API Setup
+## 💻 Local Development
 
-1. Sign up/Log in to the [Groq Console](https://console.groq.com/).
-2. Navigate to **API Keys** in the sidebar.
-3. Click **Create API Key**, name it `FridgeChef-Slack`, and copy the key (starts with `gsk_`).
-
----
-
-## 💻 Local Development & Testing
-
-Slack requires a public HTTPS URL to forward slash command events to your local machine. We use **ngrok** to tunnel traffic.
-
-### Step 1: Configure `.env`
+### 1. Configure `.env`
 Create a `.env` file in the root folder (based on `.env.example`) and populate the keys:
 ```env
-SLACK_BOT_TOKEN=xoxb-your-copied-bot-token
-SLACK_SIGNING_SECRET=your-copied-signing-secret
+SLACK_BOT_TOKEN=xoxb-your-bot-token
+SLACK_SIGNING_SECRET=your-slack-signing-secret
+SLACK_APP_LEVEL_TOKEN=xapp-your-app-level-token
 GROQ_API_KEY=gsk_your_groq_api_key
 PORT=3000
 ```
 
-### Step 2: Start the Local Server
+### 2. Start the Bot
 Run the project in development mode:
 ```bash
 npm run dev
 ```
-The server will start listening on port `3000`.
-
-### Step 3: Run ngrok
-Expose port 3000 to the public web:
-```bash
-# If you have ngrok installed globally
-ngrok http 3000
+You should see:
+```text
+📡 Express health check server listening on port 3000
+⚡️ FridgeChef AI is running in Socket Mode!
 ```
-Copy the secure `https://` forwarding URL provided by ngrok (e.g., `https://a1b2-34-56-78.ngrok-free.app`).
-
-### Step 4: Update Slack Command URLs
-Go back to the **Slash Commands** section of your app settings on the [Slack API Portal](https://api.slack.com/apps), edit each command, and set the **Request URL** to:
-`https://<YOUR_NGROK_URL>/slack/events` (e.g., `https://a1b2-34-56-78.ngrok-free.app/slack/events`).
-
-Now, go to your Slack Workspace and test the commands:
-- `/fridgecook cheese, egg, pasta`
-- `/fridgehealth spinach, salmon, olive oil`
-- `/fridgeshop beef, lettuce`
+The bot is now connected to Slack! You can trigger `/fridgecook` or mention `@FridgeChef AI` in a channel.
 
 ---
 
-## ☁️ Deploying on Render (24/7 Online Hosting)
+## 💡 Expanded Command Ideas (For Future Updates)
 
-To deploy your Slack bot to the cloud on **Render** so it runs permanently without running your local computer:
+If you are looking to make this project even more advanced, here are some command ideas you can add:
 
-### Step 1: Push Code to GitHub
-Create a new GitHub repository and push your project code. Make sure `.env` is **not** pushed (it should be automatically ignored).
+1. **`/fridgeinventory`**
+   Allows users to add, view, and remove items currently stored in their physical fridge. This acts as a persistent digital inventory so they don't have to re-type ingredients every time.
+   - *Example:* `/fridgeinventory add 1L Milk, 6 Eggs` or `/fridgeinventory list`
 
-### Step 2: Create a Web Service on Render
-1. Log in to [Render](https://render.com/).
-2. Click **New +** -> **Web Service**.
-3. Connect your GitHub repository.
-4. Configure the settings:
+2. **`/fridgeexpire`**
+   Tracks expiration dates of ingredients. Users can log expiration dates, and the bot will send automated warnings when items are 1–2 days away from spoiling, recommending recipes specifically to use up those expiring items first.
+   - *Example:* `/fridgeexpire milk 2026-07-10`
+
+3. **`/fridgeshare`**
+   Integrates social cooking features. Lets roommates or team members list things they want to share (e.g., "I have extra parsley going to waste, come grab it!"). It sends a community alert to coordinates food sharing.
+
+4. **`/fridgetips`**
+   Provides AI-generated kitchen hacks, food preservation tips, and advice on how to properly store specific produce (e.g. how to keep cilantro fresh for weeks).
+
+---
+
+## ☁️ Deploying on Render (24/7 Hosting)
+
+Since the bot uses Socket Mode, it doesn't need external webhooks, but Render still requires web apps to bind to a port:
+
+1. Push your project code to a private GitHub repository (make sure `.env` is ignored by `.gitignore`).
+2. Log in to [Render](https://render.com/).
+3. Click **New +** -> **Web Service**.
+4. Connect your GitHub repository.
+5. Configure the settings:
    - **Name:** `fridgechef-slack-bot`
    - **Language:** `Node`
    - **Build Command:** `npm install`
    - **Start Command:** `npm start`
-   - **Instance Type:** Free (or Starter)
-
-### Step 3: Add Environment Variables
-Scroll down to the **Environment** section (or click the Env Groups/Variables tab) and add the following variables:
-- `SLACK_BOT_TOKEN`
-- `SLACK_SIGNING_SECRET`
-- `GROQ_API_KEY`
-- `PORT` (set to `3000` or let Render set it dynamically)
-
-### Step 4: Update Slack Request URLs
-Once Render finishes deploying, it will generate a public URL for your web service (e.g., `https://fridgechef-slack-bot.onrender.com`).
-Go to your **Slack API Console** -> **Slash Commands** -> Edit all commands -> Update the Request URL to:
-`https://fridgechef-slack-bot.onrender.com/slack/events`
-
-*Note: Since you are using Render's Free tier, the web service spins down after 15 minutes of inactivity. The first slash command you trigger after a long time might fail due to a 3-second timeout while Render spins back up. To prevent this, you can use a free pinging service (like UptimeRobot) to ping `https://fridgechef-slack-bot.onrender.com/health` every 10 minutes to keep it warm.*
+6. Add the environment variables (`SLACK_BOT_TOKEN`, `SLACK_SIGNING_SECRET`, `SLACK_APP_LEVEL_TOKEN`, `GROQ_API_KEY`, `PORT`) in Render's configuration tab.
+7. Click **Deploy**. Render will start the Express health server on port 3000, and Bolt will connect to the Slack WebSocket connection, keeping your bot online 24/7!
