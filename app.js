@@ -45,10 +45,7 @@ const httpServer = expressApp.listen(port, () => {
 // Each command logic is defined inside the 'commands/' directory
 require('./commands/fridgecook')(app);
 require('./commands/fridgehealth')(app);
-require('./commands/fridgeshop')(app);
 require('./commands/fridgeinventory')(app);
-require('./commands/fridgeshare')(app);
-require('./commands/fridgetips')(app);
 
 // 4. Register Event Listeners (e.g. app_mention)
 // Handles direct mentions: @FridgeChef AI chicken, eggs, rice
