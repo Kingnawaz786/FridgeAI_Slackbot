@@ -1,0 +1,53 @@
+Interactive AI Cooking Coach: A conversational mode where the AI guides you step-by-step through a recipe, asking "Done?" before giving the next step.
+
+Flavor Profiling & Pairing Recommendation: Suggest ingredients that pair chemically well with what is already in the fridge (using food pairing databases).
+
+Dynamic Portion & Scale Math: Let users type "Scale to 6 people" inside a recipe thread, dynamically rebuilding the entire shopping list and instructions.
+
+Ingredient Substitutions Tree: Generate alternative replacement paths if a user is missing a minor ingredient (e.g., using applesauce instead of eggs for baking).
+
+Cuisine Selector Filter: Tweak recipes to match styles like Mexican, Italian, Indian, or Fusion based on available ingredients.
+
+Leftover Deterioration Prediction: Prompt users to eat cooked leftovers based on their preparation date before bacterial growth risk rises.
+
+AI Plating Suggestions: Recommend visual plating techniques and table setups for special dinner recipes.
+
+a system where user upload an image an ocr is performed by api then send to LLM for identifying ingredient and then tell user that is this food is good for health
+
+Slack App Home Tab Grid: Build a visual interface in the bot's "Home" tab showing a grid of ingredients, categorized by section (Dairy, Produce, etc.), with simple plus/minus buttons.
+
+Interactive Step-by-Step Canvas: Use Slack Canvas features to create a collaborative live cooking checklist for shared recipes.
+Interactive Shopping Checklist Progress Bars: Add a visual Block Kit progress bar to the grocery list showing how close you are to completion.
+
+React-to-Inventory: Allow users to add ingredients to the virtual fridge by reacting with food emojis (e.g., reacting with 🥦 adds broccoli).
+
+Group Voting Polls: A /fridgevote command that generates a Block Kit poll with 3 recipe suggestions for a channel to vote on.
+
+Interactive Meal Planner Calendar: A dashboard displaying scheduled breakfasts, lunches, and dinners for the upcoming week.
+
+Thread-Based Timers: Include a button on recipes like "Set 10 Min Timer" that automatically creates a background job and mentions you in a thread when done.
+
+Fast-Filter Buttons: Quick-tap tabs at the top of the pantry (e.g. [Gluten-Free], [Keto], [Drinks]) to filter inventory immediately.
+
+Roommate Claim Logs: Show who checked out which ingredients (e.g., "Nawaz checked out 2 Eggs").
+
+Interactive Food Swapping board: A board in the App Home tab listing items members want to swap.
+
+Allergy Warnings Banner: A permanent warning banner on recipes containing items that match channel members' logged allergies.
+
+Shopping Receipt Image Parser: Upload a grocery receipt photo, parse the text, and populate the inventory automatically.
+
+Instacart / Amazon Fresh Auto-Cart: Automatically add missing items from /fridgeshop directly to your online Instamart or Amazon Fresh grocery cart. extend it to blinkit zepto etc 
+
+Water Hydration Reminders: Send periodic reminders to drink water during the workday.
+
+Vitamins & Minerals Audit: Identify nutritional gaps in your fridge and recommend foods rich in those missing nutrients.
+
+Power Outage Safety Advisor: If the fridge loses temperature, calculate how long food remains safe to eat.
+
+Freezer Burn warnings: Notify users if meat has been in the freezer for over 6 months.
+
+Food Longevity Tips: Display tips on how to keep items fresh (e.g., storing bananas away from other fruits).
+
+Automatic Expiry Snoozing: Allow users to click a button to extend an expiration date if they froze the item.
+
